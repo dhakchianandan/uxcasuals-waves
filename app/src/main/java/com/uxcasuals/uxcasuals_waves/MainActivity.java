@@ -11,6 +11,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.google.gson.Gson;
 import com.uxcasuals.uxcasuals_waves.adapters.StationsAdapter;
+import com.uxcasuals.uxcasuals_waves.fragments.LandingPageFragment;
 import com.uxcasuals.uxcasuals_waves.models.Station;
 import com.uxcasuals.uxcasuals_waves.utils.AsyncHelper;
 
@@ -24,7 +25,6 @@ public class MainActivity extends Activity {
     private final String TAG = MainActivity.class.getName();
     private final String SERVER_URL = "https://uxcasuals-waves.herokuapp.com/api/stations";
     private List<Station> stations;
-    private StationsAdapter stationsAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +32,9 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         loadStations();
+        getFragmentManager().beginTransaction()
+                .replace(R.id.container_fluid, new LandingPageFragment())
+                .commit();
     }
 
     @Override
