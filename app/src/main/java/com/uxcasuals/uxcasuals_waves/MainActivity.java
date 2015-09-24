@@ -10,7 +10,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.google.gson.Gson;
-import com.uxcasuals.uxcasuals_waves.adapters.StationsAdapter;
+import com.uxcasuals.uxcasuals_waves.fragments.HomePageFragment;
 import com.uxcasuals.uxcasuals_waves.fragments.LandingPageFragment;
 import com.uxcasuals.uxcasuals_waves.models.Station;
 import com.uxcasuals.uxcasuals_waves.utils.AsyncHelper;
@@ -65,6 +65,7 @@ public class MainActivity extends Activity {
             public void onResponse(JSONArray response) {
                 stations = Arrays.asList(new Gson().fromJson(String.valueOf(response), Station[].class));
                 Log.d(TAG, "Stations:" + stations);
+                loadHomePageFragment();
 
             }
         }, new Response.ErrorListener() {
@@ -74,5 +75,13 @@ public class MainActivity extends Activity {
             }
         });
         AsyncHelper.getInstance(this).addToRequestQueue(request);
+    }
+
+    private void loadHomePageFragment() {
+        HomePageFragment homePageFragment = new HomePageFragment();
+        homePageFragment.setStations(stations);
+        getFragmentManager().beginTransaction()
+                .replace(R.id.container_fluid, homePageFragment)
+                .commit();
     }
 }
