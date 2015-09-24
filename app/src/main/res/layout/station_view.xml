@@ -21,7 +21,7 @@
             android:id="@+id/station_logo"
             android:layout_width="match_parent"
             android:layout_weight="1.0"
-            android:src="@drawable/ic_music_circle"
+            android:src="@drawable/ic_music_circle_primary"
             android:scaleType="fitXY"
             android:layout_height="0dp" />
 

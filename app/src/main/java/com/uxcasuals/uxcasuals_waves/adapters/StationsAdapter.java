@@ -9,7 +9,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.uxcasuals.uxcasuals_waves.R;
+import com.uxcasuals.uxcasuals_waves.events.PlayStationEvent;
 import com.uxcasuals.uxcasuals_waves.models.Station;
+import com.uxcasuals.uxcasuals_waves.utils.EventHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +35,7 @@ public class StationsAdapter extends RecyclerView.Adapter<StationsAdapter.ViewHo
     }
 
     public StationsAdapter(List<Station> stations) {
+        EventHelper.getInstance().register(this);
         this.stations = stations;
     }
 
@@ -51,13 +54,14 @@ public class StationsAdapter extends RecyclerView.Adapter<StationsAdapter.ViewHo
 
         final Station station = stations.get(position);
         stationNameView.setText(station.getName());
-        stationImageView.setImageResource(R.drawable.ic_music_circle);
+        stationImageView.setImageResource(R.drawable.ic_music_circle_primary);
 //        new BitmapLoader(stationImageView, station.getLogo()).execute();
 //        AlbumArtCache.getInstance().fetchBitmap(station.getLogo(), stationImageView);
 
         stationView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                EventHelper.getInstance().post(new PlayStationEvent(station));
             }
         });
     }

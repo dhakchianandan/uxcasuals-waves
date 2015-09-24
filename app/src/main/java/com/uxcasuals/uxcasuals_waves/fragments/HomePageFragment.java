@@ -9,9 +9,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
+import com.squareup.otto.Subscribe;
 import com.uxcasuals.uxcasuals_waves.R;
 import com.uxcasuals.uxcasuals_waves.adapters.StationsAdapter;
+import com.uxcasuals.uxcasuals_waves.events.PlayStationEvent;
 import com.uxcasuals.uxcasuals_waves.models.Station;
+import com.uxcasuals.uxcasuals_waves.utils.EventHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +25,7 @@ import java.util.List;
  */
 public class HomePageFragment extends Fragment {
     private List<Station> stations = new ArrayList<>();
+    private SlidingUpPanelLayout slidingUpPanelLayout;
 
     public HomePageFragment() {
         // Required empty public constructor
@@ -34,6 +39,8 @@ public class HomePageFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home_page, container, false);
+        slidingUpPanelLayout = (SlidingUpPanelLayout) view.findViewById(R.id.sliding_layout);
+        slidingUpPanelLayout.hidePanel();
         RecyclerView stationsView = (RecyclerView)view.findViewById(R.id.stations_view);
         RecyclerView.LayoutManager layout = new GridLayoutManager(getActivity(), 2);
         StationsAdapter stationsAdapter = new StationsAdapter(stations);
@@ -43,5 +50,20 @@ public class HomePageFragment extends Fragment {
         return view;
     }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+        EventHelper.getInstance().register(this);
+    }
 
+    @Override
+    public void onStop() {
+        EventHelper.getInstance().unregister(this);
+        super.onStop();
+    }
+
+    @Subscribe
+    public void showPlayerControls(PlayStationEvent playStationEvent) {
+        slidingUpPanelLayout.showPanel();
+    }
 }
