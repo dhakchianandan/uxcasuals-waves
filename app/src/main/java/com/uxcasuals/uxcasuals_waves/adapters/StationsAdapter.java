@@ -1,5 +1,6 @@
 package com.uxcasuals.uxcasuals_waves.adapters;
 
+import android.content.Context;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -8,9 +9,12 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.android.volley.toolbox.ImageLoader;
+import com.android.volley.toolbox.NetworkImageView;
 import com.uxcasuals.uxcasuals_waves.R;
 import com.uxcasuals.uxcasuals_waves.events.PlayStationEvent;
 import com.uxcasuals.uxcasuals_waves.models.Station;
+import com.uxcasuals.uxcasuals_waves.utils.AsyncHelper;
 import com.uxcasuals.uxcasuals_waves.utils.EventHelper;
 
 import java.util.ArrayList;
@@ -21,6 +25,7 @@ import java.util.List;
  */
 public class StationsAdapter extends RecyclerView.Adapter<StationsAdapter.ViewHolder> {
     private List<Station> stations = new ArrayList<Station>();
+    private Context context;
 
     public class ViewHolder extends RecyclerView.ViewHolder {
         private CardView staionView;
@@ -32,6 +37,10 @@ public class StationsAdapter extends RecyclerView.Adapter<StationsAdapter.ViewHo
 
     public void setStations(List<Station> stations) {
         this.stations = stations;
+    }
+
+    public void setContext(Context context) {
+        this.context = context;
     }
 
     public StationsAdapter(List<Station> stations) {
@@ -50,13 +59,14 @@ public class StationsAdapter extends RecyclerView.Adapter<StationsAdapter.ViewHo
     public void onBindViewHolder(StationsAdapter.ViewHolder viewHolder, int position) {
         CardView stationView = viewHolder.staionView;
         TextView stationNameView = (TextView) stationView.findViewById(R.id.station_name);
-        ImageView stationImageView = (ImageView) stationView.findViewById(R.id.station_logo);
+        NetworkImageView stationImageView = (NetworkImageView) stationView.findViewById(R.id.station_logo);
 
         final Station station = stations.get(position);
         stationNameView.setText(station.getName());
-        stationImageView.setImageResource(R.drawable.ic_music_circle_primary);
-//        new BitmapLoader(stationImageView, station.getLogo()).execute();
-//        AlbumArtCache.getInstance().fetchBitmap(station.getLogo(), stationImageView);
+
+        stationImageView.setDefaultImageResId(R.drawable.ic_music_circle_primary);
+        ImageLoader imageLoader = AsyncHelper.getInstance(context).getImageLoader();
+        stationImageView.setImageUrl(station.getLogo(), imageLoader);
 
         stationView.setOnClickListener(new View.OnClickListener() {
             @Override

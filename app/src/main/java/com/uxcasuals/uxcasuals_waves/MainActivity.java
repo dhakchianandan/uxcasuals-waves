@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
@@ -83,5 +84,9 @@ public class MainActivity extends Activity {
         getFragmentManager().beginTransaction()
                 .replace(R.id.container_fluid, homePageFragment)
                 .commit();
+    }
+
+    public void toggleMediaPlayer(View view) {
+
     }
 }

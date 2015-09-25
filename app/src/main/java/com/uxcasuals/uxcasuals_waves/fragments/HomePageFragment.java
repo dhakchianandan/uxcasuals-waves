@@ -9,12 +9,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.android.volley.toolbox.NetworkImageView;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 import com.squareup.otto.Subscribe;
 import com.uxcasuals.uxcasuals_waves.R;
 import com.uxcasuals.uxcasuals_waves.adapters.StationsAdapter;
 import com.uxcasuals.uxcasuals_waves.events.PlayStationEvent;
 import com.uxcasuals.uxcasuals_waves.models.Station;
+import com.uxcasuals.uxcasuals_waves.utils.AsyncHelper;
 import com.uxcasuals.uxcasuals_waves.utils.EventHelper;
 
 import java.util.ArrayList;
@@ -44,6 +46,7 @@ public class HomePageFragment extends Fragment {
         RecyclerView stationsView = (RecyclerView)view.findViewById(R.id.stations_view);
         RecyclerView.LayoutManager layout = new GridLayoutManager(getActivity(), 2);
         StationsAdapter stationsAdapter = new StationsAdapter(stations);
+        stationsAdapter.setContext(getActivity().getApplicationContext());
         stationsView.setLayoutManager(layout);
         stationsView.setAdapter(stationsAdapter);
 
@@ -64,6 +67,11 @@ public class HomePageFragment extends Fragment {
 
     @Subscribe
     public void showPlayerControls(PlayStationEvent playStationEvent) {
+        NetworkImageView playingStationImage = (NetworkImageView)
+                slidingUpPanelLayout.findViewById(R.id.playing_station_image);
+//        playingStationImage.setDefaultImageResId(R.drawable.ic_music_circle_accent);
+        playingStationImage.setImageUrl(playStationEvent.getStation().getLogo(),
+                AsyncHelper.getInstance(getActivity().getApplicationContext()).getImageLoader());
         slidingUpPanelLayout.showPanel();
     }
 }
