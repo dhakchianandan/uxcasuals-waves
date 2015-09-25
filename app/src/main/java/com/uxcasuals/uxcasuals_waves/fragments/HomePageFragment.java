@@ -8,6 +8,8 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 
 import com.android.volley.toolbox.NetworkImageView;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
@@ -15,6 +17,7 @@ import com.squareup.otto.Subscribe;
 import com.uxcasuals.uxcasuals_waves.R;
 import com.uxcasuals.uxcasuals_waves.adapters.StationsAdapter;
 import com.uxcasuals.uxcasuals_waves.events.PlayStationEvent;
+import com.uxcasuals.uxcasuals_waves.events.ToggleControlIconEvent;
 import com.uxcasuals.uxcasuals_waves.models.Station;
 import com.uxcasuals.uxcasuals_waves.utils.AsyncHelper;
 import com.uxcasuals.uxcasuals_waves.utils.EventHelper;
@@ -69,9 +72,18 @@ public class HomePageFragment extends Fragment {
     public void showPlayerControls(PlayStationEvent playStationEvent) {
         NetworkImageView playingStationImage = (NetworkImageView)
                 slidingUpPanelLayout.findViewById(R.id.playing_station_image);
-//        playingStationImage.setDefaultImageResId(R.drawable.ic_music_circle_accent);
         playingStationImage.setImageUrl(playStationEvent.getStation().getLogo(),
                 AsyncHelper.getInstance(getActivity().getApplicationContext()).getImageLoader());
         slidingUpPanelLayout.showPanel();
+    }
+
+    @Subscribe
+    public void togglePlayerControls(ToggleControlIconEvent toggleControlIconEvent) {
+        ImageButton playerControls = (ImageButton) slidingUpPanelLayout.findViewById(R.id.playing_station_state_icons);
+        if(toggleControlIconEvent.STATE == ToggleControlIconEvent.IS_PLAYING) {
+            playerControls.setImageResource(R.drawable.ic_pause_black_48dp);
+        } else {
+            playerControls.setImageResource(R.drawable.ic_play_arrow_black_48dp);
+        }
     }
 }
