@@ -15,23 +15,31 @@ import android.widget.Toast;
 
 import com.squareup.otto.Subscribe;
 import com.uxcasuals.uxcasuals_waves.events.NotifyToggleEvent;
+import com.uxcasuals.uxcasuals_waves.events.CallStateEvent;
 import com.uxcasuals.uxcasuals_waves.events.PlayStationEvent;
 import com.uxcasuals.uxcasuals_waves.events.PrepareMediaPlayerEvent;
 import com.uxcasuals.uxcasuals_waves.events.ReleaseMediaPlayerEvent;
 import com.uxcasuals.uxcasuals_waves.events.ToggleControlIconEvent;
 import com.uxcasuals.uxcasuals_waves.models.Station;
+import com.uxcasuals.uxcasuals_waves.utils.AudioFocus;
 import com.uxcasuals.uxcasuals_waves.utils.EventHelper;
 
 import java.io.IOException;
 
-public class MusicService extends Service implements MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener {
+public class MusicService extends Service implements MediaPlayer.OnPreparedListener,
+        MediaPlayer.OnErrorListener, AudioManager.OnAudioFocusChangeListener {
 
     private static final String TAG = MusicService.class.getName();
     private static final String WIFI_TAG = "WIFI_LOCK";
 
     private MediaPlayer mMediaPlayer = null;
     private WifiManager.WifiLock wifiLock;
+
+    private AudioManager audioManager;
+    private AudioFocus audioFocus = AudioFocus.NO_STATE;
+
     private Station station;
+    private boolean SYSTEM_GENERATED_AUDIO_FOCUS_CHANGE = false;
 
     class MessageHandler extends Handler {
         @Override
@@ -43,8 +51,39 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         }
     }
 
+    public void startMediaPlayer() {
+        tryToGetAudioFocus();
+        if(audioFocus == AudioFocus.GAINED) {
+            mMediaPlayer.start();
+        } else {
+            Toast
+                .makeText(getApplicationContext(),
+                        "Close other Media Applications and try", Toast.LENGTH_LONG).show();
+        }
+        EventHelper.getInstance().post(
+                new ToggleControlIconEvent(ToggleControlIconEvent.IS_PLAYING, station));
+    }
+
+    public void pauseMediaPlayer() {
+        releaseAudioFocus();
+        mMediaPlayer.pause();
+        EventHelper.getInstance().post(
+                new ToggleControlIconEvent(ToggleControlIconEvent.IN_PAUSE, station));
+    }
+
+    public void releaseMediaPlayer() {
+        if(mMediaPlayer != null) {
+            mMediaPlayer.stop();
+            mMediaPlayer.release();
+            mMediaPlayer = null;
+            if(wifiLock.isHeld()) wifiLock.release();
+        }
+    }
+
     @Subscribe
     public void prepareMediaPlayer(PrepareMediaPlayerEvent prepareMediaPlayerEvent) {
+        audioManager =
+                (AudioManager) getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
         if(mMediaPlayer == null) {
             mMediaPlayer = new MediaPlayer();
             mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
@@ -58,29 +97,6 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
             mMediaPlayer.setOnErrorListener(this);
         }
     }
-
-    public void pauseMediaPlayer() {
-        mMediaPlayer.pause();
-        EventHelper.getInstance().post(new ToggleControlIconEvent(ToggleControlIconEvent.IN_PAUSE));
-    }
-
-    public void resumeMediaPlayer() {
-        mMediaPlayer.start();
-        EventHelper.getInstance().post(new ToggleControlIconEvent(ToggleControlIconEvent.IS_PLAYING));
-    }
-
-    public void releaseMediaPlayer() {
-        if(mMediaPlayer != null) {
-            mMediaPlayer.stop();
-            mMediaPlayer.release();
-            mMediaPlayer = null;
-        }
-
-        if(wifiLock.isHeld()) {
-            wifiLock.release();
-        }
-    }
-
 
     @Subscribe
     public void playStation(PlayStationEvent playStationEvent) {
@@ -97,33 +113,54 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     }
 
     @Subscribe
-    public void stopMediaPlayer(ReleaseMediaPlayerEvent releaseMediaPlayerEvent) {
-        releaseMediaPlayer();
-    }
-
-    @Subscribe
     public void toggleMediaPlayer(NotifyToggleEvent notifyToggleEvent) {
         if(mMediaPlayer != null) {
             if(mMediaPlayer.isPlaying()) {
                 pauseMediaPlayer();
             } else {
-                resumeMediaPlayer();
+                startMediaPlayer();
             }
         }
     }
 
-    final Messenger messenger = new Messenger(new MessageHandler());
+    @Subscribe
+    public void stopMediaPlayer(ReleaseMediaPlayerEvent releaseMediaPlayerEvent) {
+        releaseMediaPlayer();
+    }
 
-    @Override
-    public void onPrepared(MediaPlayer mMediaPlayer) {
-        Toast.makeText(getApplicationContext(), "Playing " + station.getName(), Toast.LENGTH_SHORT).show();
-        resumeMediaPlayer();
+    private void tryToGetAudioFocus() {
+        int result = audioManager.requestAudioFocus(this,
+                AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
+        if(result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            audioFocus = AudioFocus.GAINED;
+        }
+    }
+
+    private void releaseAudioFocus() {
+        audioManager.abandonAudioFocus(this);
+        audioFocus = AudioFocus.LOST;
     }
 
     @Override
-    public boolean onError(MediaPlayer mp, int what, int extra) {
-        Toast.makeText(getApplicationContext(), "Problem with streaming. Try other stations!!", Toast.LENGTH_SHORT).show();
-        return false;
+    public void onAudioFocusChange(int focusChange) {
+        switch (focusChange) {
+            case AudioManager.AUDIOFOCUS_GAIN:
+                break;
+            case AudioManager.AUDIOFOCUS_LOSS:
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+                pauseMediaPlayer();
+                break;
+        }
+    }
+
+    @Subscribe
+    public void handlePhoneCallState(CallStateEvent callStateEvent) {
+        if(mMediaPlayer != null) {
+            if(mMediaPlayer.isPlaying()) {
+                pauseMediaPlayer();
+            }
+        }
     }
 
     @Override
@@ -131,4 +168,20 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         EventHelper.getInstance().register(this);
         return messenger.getBinder();
     }
+
+    @Override
+    public void onPrepared(MediaPlayer mMediaPlayer) {
+        Toast.makeText(getApplicationContext(),
+                "Playing " + station.getName(), Toast.LENGTH_SHORT).show();
+        startMediaPlayer();
+    }
+
+    @Override
+    public boolean onError(MediaPlayer mp, int what, int extra) {
+        Toast.makeText(getApplicationContext(),
+                "Problem with streaming. Try other stations!!", Toast.LENGTH_SHORT).show();
+        return false;
+    }
+
+    final Messenger messenger = new Messenger(new MessageHandler());
 }

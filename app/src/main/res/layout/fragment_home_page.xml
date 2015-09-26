@@ -41,8 +41,7 @@
                     android:layout_width="75dp"
                     android:layout_height="match_parent"
                     android:padding="4dp"
-                    android:scaleType="fitXY"
-                    android:src="@drawable/ic_music_circle_accent"/>
+                    android:scaleType="fitXY"/>
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -53,9 +52,23 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:id="@+id/playing_station_message"
+                        android:paddingTop="@dimen/content_padding"
+                        android:paddingLeft="@dimen/content_padding"
+                        android:paddingRight="@dimen/content_padding"
+                        android:paddingBottom="@dimen/content_padding_bottom"
                         android:textStyle="bold"
-                        android:textSize="@dimen/button_font_size"
-                        android:text="Listening to Radio City"/>
+                        android:textSize="@dimen/button_font_size"/>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingLeft="@dimen/content_padding"
+                        android:paddingTop="0dp"
+                        android:paddingRight="@dimen/content_padding"
+                        android:id="@+id/enjoy_music"
+                        android:textSize="@dimen/controls_font_size"
+                        android:text="@string/enjoy_your_day"/>
 
                 </LinearLayout>
 
@@ -67,17 +80,9 @@
                     android:background="@drawable/button_style"
                     android:src="@drawable/ic_pause_black_48dp"
                     android:scaleType="centerCrop"
-                    android:text="@string/action_settings"
                     android:onClick="toggleMediaPlayer"/>
 
             </LinearLayout>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="68sp"
-                android:text="@string/hello_world"/>
-
         </LinearLayout>
 
     </com.sothree.slidinguppanel.SlidingUpPanelLayout>

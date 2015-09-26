@@ -6,7 +6,6 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.android.volley.toolbox.ImageLoader;
@@ -64,7 +63,7 @@ public class StationsAdapter extends RecyclerView.Adapter<StationsAdapter.ViewHo
         final Station station = stations.get(position);
         stationNameView.setText(station.getName());
 
-        stationImageView.setDefaultImageResId(R.drawable.ic_music_circle_primary);
+//        stationImageView.setDefaultImageResId(R.drawable.ic_icon);
         ImageLoader imageLoader = AsyncHelper.getInstance(context).getImageLoader();
         stationImageView.setImageUrl(station.getLogo(), imageLoader);
 

@@ -1,9 +1,8 @@
 <resources>
-    <string name="app_name">uxcasuals-waves</string>
-    <string name="name">Waves</string>
-    <string name="hello_world">Hello world!</string>
+    <string name="app_name">Waves</string>
     <string name="action_settings">Settings</string>
-
-<!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="listening">Now listening</string>
+    <string name="listen">Listen</string>
+    <string name="favourite_station_playing">%1$s  to %2$s</string>
+    <string name="enjoy_your_day">Enjoy your day!!</string>
 </resources>

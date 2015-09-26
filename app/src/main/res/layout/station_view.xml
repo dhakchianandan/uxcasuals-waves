@@ -21,7 +21,6 @@
             android:id="@+id/station_logo"
             android:layout_width="match_parent"
             android:layout_weight="1.0"
-            android:src="@drawable/ic_music_circle_primary"
             android:scaleType="fitXY"
             android:layout_height="0dp" />
 
@@ -32,8 +31,7 @@
             android:padding="@dimen/content_padding"
             android:textSize="@dimen/button_font_size"
             android:textStyle="bold"
-            android:textAllCaps="true"
-            android:text="@string/hello_world"/>
+            android:textAllCaps="true"/>
 
     </LinearLayout>
 

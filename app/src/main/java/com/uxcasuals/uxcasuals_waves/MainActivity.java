@@ -1,13 +1,18 @@
 package com.uxcasuals.uxcasuals_waves;
 
-import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Messenger;
+import android.support.design.widget.Snackbar;
+import android.support.v7.app.AppCompatActivity;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -27,13 +32,14 @@ import com.uxcasuals.uxcasuals_waves.models.Station;
 import com.uxcasuals.uxcasuals_waves.services.MusicService;
 import com.uxcasuals.uxcasuals_waves.utils.AsyncHelper;
 import com.uxcasuals.uxcasuals_waves.utils.EventHelper;
+import com.uxcasuals.uxcasuals_waves.utils.NetworkHelper;
 
 import org.json.JSONArray;
 
 import java.util.Arrays;
 import java.util.List;
 
-public class MainActivity extends Activity {
+public class MainActivity extends AppCompatActivity {
 
     private final String TAG = MainActivity.class.getName();
     private final String SERVER_URL = "https://uxcasuals-waves.herokuapp.com/api/stations";
@@ -59,12 +65,24 @@ public class MainActivity extends Activity {
         }
     };
 
+//    private BroadcastReceiver NetworkStateHandler = new BroadcastReceiver() {
+//        @Override
+//        public void onReceive(Context context, Intent intent) {
+//            Toast.makeText(context, "Inside broadcast receiver", Toast.LENGTH_SHORT).show();
+//            if(!(stations != null && stations.size() > 0)) loadStations();
+//        }
+//    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         loadStations();
+        TelephonyManager telephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+        PhoneStateListener phoneStateListener = new PhoneStateListener();
+        if(telephonyManager != null) {
+            telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+        }
         getFragmentManager().beginTransaction()
                 .replace(R.id.container_fluid, new LandingPageFragment())
                 .commit();
@@ -92,7 +110,21 @@ public class MainActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
 
+//    private void registerBroadcastReceivers() {
+//        final IntentFilter filters = new IntentFilter();
+//        filters.addAction("android.net.wifi.WIFI_STATE_CHANGED");
+//        filters.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+//        filters.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+//        getApplicationContext().registerReceiver(NetworkStateHandler, filters);
+//    }
+
     private void loadStations() {
+        if(!NetworkHelper.isConnectedToInternet(getApplicationContext())) {
+            Snackbar.make(findViewById(R.id.container_fluid),
+                    "Network connectivity not available", Snackbar.LENGTH_SHORT).show();
+//            registerBroadcastReceivers();
+            return;
+        }
         JsonArrayRequest request = new JsonArrayRequest(SERVER_URL, new Response.Listener<JSONArray>() {
             @Override
             public void onResponse(JSONArray response) {
@@ -104,7 +136,7 @@ public class MainActivity extends Activity {
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-
+                Toast.makeText(getApplicationContext(), "Error fetching stations", Toast.LENGTH_SHORT).show();
             }
         });
         AsyncHelper.getInstance(this).addToRequestQueue(request);
@@ -131,13 +163,13 @@ public class MainActivity extends Activity {
     }
 
     @Override
-    protected void onStop() {
+    protected void onDestroy() {
         EventHelper.getInstance().post(new ReleaseMediaPlayerEvent());
         if(mBound) {
             unbindService(connection);
             mBound = false;
         }
-        super.onStop();
+        super.onDestroy();
     }
 
     @Override
