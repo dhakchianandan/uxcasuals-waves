@@ -18,7 +18,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
+import android.os.Handler;
 
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
@@ -42,42 +44,38 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private final String TAG = MainActivity.class.getName();
+    private static int APPLICATION_TIME_OUT = 2000;
+    private static int NETWORK_REQUEST_TIME_OUT = 5000;
     private final String SERVER_URL = "https://uxcasuals-waves.herokuapp.com/api/stations";
-    private List<Station> stations;
     private boolean BACK_BUTTON_PRESSED = false;
+    private boolean STATIONS_AVAILABLE = false;
+    private boolean BROADCAST_RECEIVERS_REGISTERED =false;
 
     private Messenger mMessenger = null;
     private boolean mBound = false;
+    private Snackbar snackbar;
+    private List<Station> stations;
 
     private ServiceConnection connection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             mMessenger = new Messenger(service);
             mBound = true;
-            Log.d(TAG, "Connection Successfull..");
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             mMessenger = null;
             mBound = false;
-            Log.d(TAG, "Connection Closed..");
+            EventHelper.getInstance().post(new ReleaseMediaPlayerEvent());
         }
     };
-
-//    private BroadcastReceiver NetworkStateHandler = new BroadcastReceiver() {
-//        @Override
-//        public void onReceive(Context context, Intent intent) {
-//            Toast.makeText(context, "Inside broadcast receiver", Toast.LENGTH_SHORT).show();
-//            if(!(stations != null && stations.size() > 0)) loadStations();
-//        }
-//    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        loadStations();
+        tryToLoadStation();
         TelephonyManager telephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
         PhoneStateListener phoneStateListener = new PhoneStateListener();
         if(telephonyManager != null) {
@@ -110,35 +108,70 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-//    private void registerBroadcastReceivers() {
-//        final IntentFilter filters = new IntentFilter();
-//        filters.addAction("android.net.wifi.WIFI_STATE_CHANGED");
-//        filters.addAction("android.net.conn.CONNECTIVITY_CHANGE");
-//        filters.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
-//        getApplicationContext().registerReceiver(NetworkStateHandler, filters);
-//    }
+    private void tryToLoadStation() {
+        if(NetworkHelper.isConnectedToInternet(getApplicationContext())) {
+            loadStations();
+        } else {
+            snackbar = Snackbar.make(findViewById(R.id.container_fluid),
+                    "Network connectivity not available", Snackbar.LENGTH_INDEFINITE);
 
-    private void loadStations() {
-        if(!NetworkHelper.isConnectedToInternet(getApplicationContext())) {
-            Snackbar.make(findViewById(R.id.container_fluid),
-                    "Network connectivity not available", Snackbar.LENGTH_SHORT).show();
-//            registerBroadcastReceivers();
+            snackbar.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackbar.dismiss();
+                }
+            }).show();
+            registerBroadcastReceivers();
             return;
         }
+    }
+
+    private BroadcastReceiver NetworkStateHandler = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if(!STATIONS_AVAILABLE && NetworkHelper.isConnectedToInternet(getApplicationContext())) {
+                loadStations();
+                if(snackbar != null && snackbar.isShown()) snackbar.dismiss();
+            }
+        }
+    };
+
+    private void registerBroadcastReceivers() {
+        final IntentFilter filters = new IntentFilter();
+        filters.addAction("android.net.wifi.WIFI_STATE_CHANGED");
+        filters.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+        filters.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+        getApplicationContext().registerReceiver(NetworkStateHandler, filters);
+        BROADCAST_RECEIVERS_REGISTERED = true;
+    }
+
+    private void loadStations() {
         JsonArrayRequest request = new JsonArrayRequest(SERVER_URL, new Response.Listener<JSONArray>() {
             @Override
             public void onResponse(JSONArray response) {
                 stations = Arrays.asList(new Gson().fromJson(String.valueOf(response), Station[].class));
                 Log.d(TAG, "Stations:" + stations);
+                STATIONS_AVAILABLE = true;
+                if(BROADCAST_RECEIVERS_REGISTERED) {
+                    getApplicationContext().unregisterReceiver(NetworkStateHandler);
+                }
                 loadHomePageFragment();
 
             }
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Toast.makeText(getApplicationContext(), "Error fetching stations", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "Network is too slow. Closing application.", Toast.LENGTH_SHORT).show();
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        finish();
+                    }
+                }, APPLICATION_TIME_OUT);
             }
         });
+        request.setRetryPolicy(new DefaultRetryPolicy(NETWORK_REQUEST_TIME_OUT,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
         AsyncHelper.getInstance(this).addToRequestQueue(request);
     }
 
@@ -164,7 +197,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        EventHelper.getInstance().post(new ReleaseMediaPlayerEvent());
         if(mBound) {
             unbindService(connection);
             mBound = false;

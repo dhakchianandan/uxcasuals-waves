@@ -4,6 +4,7 @@ package com.uxcasuals.uxcasuals_waves.fragments;
 import android.app.Fragment;
 import android.content.res.Resources;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -19,6 +20,8 @@ import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 import com.squareup.otto.Subscribe;
 import com.uxcasuals.uxcasuals_waves.R;
 import com.uxcasuals.uxcasuals_waves.adapters.StationsAdapter;
+import com.uxcasuals.uxcasuals_waves.events.NetworkAvailableEvent;
+import com.uxcasuals.uxcasuals_waves.events.NetworkOfflineEvent;
 import com.uxcasuals.uxcasuals_waves.events.PlayStationEvent;
 import com.uxcasuals.uxcasuals_waves.events.ToggleControlIconEvent;
 import com.uxcasuals.uxcasuals_waves.models.Station;
@@ -34,6 +37,7 @@ import java.util.List;
 public class HomePageFragment extends Fragment {
     private List<Station> stations = new ArrayList<>();
     private SlidingUpPanelLayout slidingUpPanelLayout;
+    private Snackbar snackbar;
 
     public HomePageFragment() {
     }
@@ -108,5 +112,23 @@ public class HomePageFragment extends Fragment {
 
         }
         playingStationMessage.setText(message);
+    }
+
+    @Subscribe
+    public void showOfflineSnackBar(NetworkOfflineEvent event) {
+        snackbar = Snackbar.make(getView().findViewById(R.id.home_container),
+                "Network connectivity not available", Snackbar.LENGTH_INDEFINITE);
+
+        snackbar.setAction("Dismiss", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                snackbar.dismiss();
+            }
+        }).show();
+    }
+
+    @Subscribe
+    public void dismissOfflineSnackbar(NetworkAvailableEvent event) {
+        if(snackbar != null && snackbar.isShown()) snackbar.dismiss();
     }
 }
